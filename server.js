@@ -27,7 +27,14 @@ async function loginTF() {
   await launchBrowser();
 
   console.log('[TF] Navigating to login...');
-  await page.goto(`${TF_BASE}/login/`, { waitUntil: 'networkidle2', timeout: 30000 });
+  await page.goto(`${TF_BASE}/login/`, { waitUntil: 'networkidle2', timeout: 60000 });
+
+  console.log('[TF] Waiting for Cloudflare challenge...');
+  await page.waitForFunction(
+    () => !document.title.includes('Just a moment'),
+    { timeout: 45000 }
+  );
+  console.log('[TF] Cloudflare challenge passed');
 
   await page.waitForSelector('input[name="logname"]', { timeout: 15000 });
   await page.type('input[name="logname"]', TF_EMAIL, { delay: 50 });
