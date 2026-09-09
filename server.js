@@ -36,12 +36,12 @@ async function loginTF() {
   );
   console.log('[TF] Cloudflare challenge passed');
 
-  await page.waitForSelector('input[name="logname"]', { timeout: 15000 });
+  await page.waitForSelector('input[name="logname"]', { timeout: 30000 });
   await page.type('input[name="logname"]', TF_EMAIL, { delay: 50 });
   await page.type('input[name="pass"]', TF_PASSWORD, { delay: 50 });
 
   await Promise.all([
-    page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }),
+    page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 }),
     page.click('button[type="submit"], input[type="submit"]'),
   ]);
 
