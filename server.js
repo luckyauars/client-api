@@ -48,16 +48,20 @@ async function loginTF() {
   await page.type('input[name="pass"]', TF_PASSWORD, { delay: 50 });
 
   await Promise.all([
-    page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 }),
+    page.waitForNavigation({ waitUntil: 'load', timeout: 30000 }).catch(() => {}),
     page.click('button[type="submit"], input[type="submit"]'),
   ]);
+
+  await new Promise(r => setTimeout(r, 3000));
 
   const url = page.url();
   if (url.includes('/dashboard') || url === TF_BASE + '/' || url === TF_BASE) {
     console.log('[TF] Login OK');
     isLoggedIn = true;
   } else {
-    console.error('[TF] Login failed, current URL:', url);
+    console.warn('[TF] Login may have failed, current URL:', url);
+    const title = await page.title();
+    console.warn('[TF] Page title:', title);
   }
 }
 
