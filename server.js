@@ -44,6 +44,14 @@ async function loginTF() {
     throw new Error('Login form not found after CF challenge');
   }
 
+  const formFields = await page.evaluate(() => {
+    const inputs = document.querySelectorAll('input, button');
+    return Array.from(inputs).map(el => ({
+      tag: el.tagName, type: el.type, name: el.name, id: el.id,
+    }));
+  });
+  console.log('[TF] Form fields:', JSON.stringify(formFields));
+
   await page.type('input[name="logname"]', TF_EMAIL, { delay: 50 });
   await page.type('input[name="pass"]', TF_PASSWORD, { delay: 50 });
 
@@ -55,13 +63,14 @@ async function loginTF() {
   await new Promise(r => setTimeout(r, 3000));
 
   const url = page.url();
+  const pageContent = await page.evaluate(() => document.body.innerText.slice(0, 300));
+  console.log('[TF] After submit URL:', url);
+  console.log('[TF] After submit body:', pageContent);
   if (url.includes('/dashboard') || url === TF_BASE + '/' || url === TF_BASE) {
     console.log('[TF] Login OK');
     isLoggedIn = true;
   } else {
-    console.warn('[TF] Login may have failed, current URL:', url);
-    const title = await page.title();
-    console.warn('[TF] Page title:', title);
+    console.warn('[TF] Login may have failed');
   }
 }
 
