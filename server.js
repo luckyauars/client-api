@@ -27,16 +27,23 @@ async function loginTF() {
   await launchBrowser();
 
   console.log('[TF] Navigating to login...');
-  await page.goto(`${TF_BASE}/login/`, { waitUntil: 'networkidle2', timeout: 60000 });
+  await page.goto(`${TF_BASE}/login/`, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
-  console.log('[TF] Waiting for Cloudflare challenge...');
-  await page.waitForFunction(
-    () => !document.title.includes('Just a moment'),
-    { timeout: 45000 }
-  );
-  console.log('[TF] Cloudflare challenge passed');
+  console.log('[TF] Waiting for Cloudflare challenge to resolve...');
+  try {
+    await page.waitForFunction(
+      () => document.querySelector('input[name="logname"]') !== null,
+      { timeout: 60000 }
+    );
+    console.log('[TF] Login form found');
+  } catch {
+    const title = await page.title();
+    const content = await page.content();
+    console.log('[TF] Page title:', title);
+    console.log('[TF] Page snippet:', content.slice(0, 500));
+    throw new Error('Login form not found after CF challenge');
+  }
 
-  await page.waitForSelector('input[name="logname"]', { timeout: 30000 });
   await page.type('input[name="logname"]', TF_EMAIL, { delay: 50 });
   await page.type('input[name="pass"]', TF_PASSWORD, { delay: 50 });
 
