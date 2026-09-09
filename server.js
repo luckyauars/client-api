@@ -19,6 +19,7 @@ async function launchBrowser() {
   if (browser) return;
   browser = await puppeteer.launch({
     headless: 'new',
+    protocolTimeout: 120000,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
   });
   page = await browser.newPage();
