@@ -57,13 +57,15 @@ async function loginTF() {
 
   await Promise.all([
     page.waitForNavigation({ waitUntil: 'load', timeout: 30000 }).catch(() => {}),
-    page.click('button[type="submit"], input[type="submit"]'),
+    page.evaluate(() => {
+      document.querySelector('#btn-signin')?.click();
+    }),
   ]);
 
-  await new Promise(r => setTimeout(r, 3000));
+  await new Promise(r => setTimeout(r, 5000));
 
   const url = page.url();
-  const pageContent = await page.evaluate(() => document.body.innerText.slice(0, 300));
+  const pageContent = await page.evaluate(() => document.body.innerText.slice(0, 500));
   console.log('[TF] After submit URL:', url);
   console.log('[TF] After submit body:', pageContent);
   if (url.includes('/dashboard') || url === TF_BASE + '/' || url === TF_BASE) {
