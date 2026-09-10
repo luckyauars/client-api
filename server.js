@@ -326,31 +326,57 @@ setInterval(async () => {
   if (isProcessing) return;
   isProcessing = true;
   try {
-    const processed = await processQueue(20);
+    const processed = await processQueue(10);
     if (processed > 0) console.log(`[Worker] Processed ${processed} jobs`);
   } catch (error) {
     console.error('[Worker] Queue error:', error.message);
   } finally {
     isProcessing = false;
   }
-}, 10000);
+}, 30000);
 
-cron.schedule('0 3,15 * * *', async () => {
-  console.log('[Cron] Update-all starting (5000 channels)...');
+cron.schedule('0 3 * * *', async () => {
+  console.log('[Cron] Update-all starting (2000 channels)...');
   try {
-    await scrapeAndSaveChannels(5000);
+    await scrapeAndSaveChannels(2000);
     console.log('[Cron] Update-all done');
   } catch (error) {
     console.error('[Cron] Update-all error:', error.message);
   }
 });
 
-cron.schedule('30 3,15 * * *', async () => {
+cron.schedule('15 3 * * *', async () => {
   console.log('[Cron] Process-all queue starting...');
   try {
     let total = 0;
     while (true) {
-      const processed = await processQueue(50);
+      const processed = await processQueue(20);
+      if (processed === 0) break;
+      total += processed;
+      console.log(`[Cron] Processed batch: ${processed} (total: ${total})`);
+    }
+    console.log(`[Cron] Process-all done. Total: ${total}`);
+  } catch (error) {
+    console.error('[Cron] Process-all error:', error.message);
+  }
+});
+
+cron.schedule('0 15 * * *', async () => {
+  console.log('[Cron] Update-all starting (2000 channels)...');
+  try {
+    await scrapeAndSaveChannels(2000);
+    console.log('[Cron] Update-all done');
+  } catch (error) {
+    console.error('[Cron] Update-all error:', error.message);
+  }
+});
+
+cron.schedule('15 15 * * *', async () => {
+  console.log('[Cron] Process-all queue starting...');
+  try {
+    let total = 0;
+    while (true) {
+      const processed = await processQueue(20);
       if (processed === 0) break;
       total += processed;
       console.log(`[Cron] Processed batch: ${processed} (total: ${total})`);
@@ -384,7 +410,7 @@ cron.schedule('0 8 1 * *', async () => {
       });
     }
 
-    await scrapeAndSaveChannels(1000);
+    await scrapeAndSaveChannels(2000);
     console.log(`[Cron] Archive done. ${channels.length} channels archived`);
   } catch (error) {
     console.error('[Cron] Archive error:', error.message);
