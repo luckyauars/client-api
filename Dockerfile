@@ -1,5 +1,7 @@
 FROM node:20-slim
 
+ENV TZ=Asia/Jakarta
+
 RUN apt-get update && apt-get install -y \
     chromium \
     fonts-ipafont-gothic \
