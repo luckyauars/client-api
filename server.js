@@ -294,8 +294,8 @@ async function processQueue(batchSize = 5) {
         where: { channelId: job.idChannel },
         data: {
           username: title,
-          rank: s.rank || '-',
-          subscribers: num(s.subs),
+          ...(s.rank ? { rank: s.rank } : {}),
+          ...(s.subs ? { subscribers: num(s.subs) } : {}),
           ageMonths: num(s.bulan),
           winCount, lossCount, drawCount,
           postedSignal: num(s.jml_signal),
