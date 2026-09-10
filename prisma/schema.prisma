@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["trader"]
 }
 
 model tradersData {
@@ -30,6 +31,8 @@ model tradersData {
   extraData       Json?
   updatedAt       DateTime @updatedAt
   createdAt       DateTime @default(now())
+
+  @@schema("trader")
 }
 
 model tblAntrian {
@@ -41,6 +44,8 @@ model tblAntrian {
   lastError       String?
   updatedAt       DateTime @updatedAt
   createdAt       DateTime @default(now())
+
+  @@schema("trader")
 }
 
 model tradersDataArchive {
@@ -65,4 +70,6 @@ model tradersDataArchive {
   extraData       Json?
   periodLabel     String?
   archivedAt      DateTime @default(now())
+
+  @@schema("trader")
 }
