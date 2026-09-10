@@ -8,6 +8,7 @@ from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from playwright.async_api import async_playwright
+from playwright_stealth import stealth_async
 
 load_dotenv()
 
@@ -16,6 +17,7 @@ TF_EMAIL = os.getenv("TF_EMAIL", "")
 TF_PASSWORD = os.getenv("TF_PASSWORD", "")
 
 browser = None
+pw_instance = None
 page = None
 is_logged_in = False
 
@@ -51,11 +53,11 @@ def parse_k(s):
 
 
 async def launch_browser():
-    global browser, page
+    global browser, pw_instance, page
     if browser:
         return
-    pw = await async_playwright().start()
-    browser = await pw.chromium.launch(
+    pw_instance = await async_playwright().start()
+    browser = await pw_instance.chromium.launch(
         headless=True,
         args=[
             "--no-sandbox",
@@ -67,12 +69,11 @@ async def launch_browser():
     ctx = await browser.new_context(
         user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
         viewport={"width": 1920, "height": 1080},
+        locale="id-ID",
+        timezone_id="Asia/Jakarta",
     )
     page = await ctx.new_page()
-    await page.add_init_script("""
-        Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
-        window.chrome = { runtime: {} };
-    """)
+    await stealth_async(page)
 
 
 async def login_tf():
@@ -92,6 +93,7 @@ async def login_tf():
 
     await page.fill('input[name="logname"]', TF_EMAIL)
     await page.fill('input[name="pass"]', TF_PASSWORD)
+    await asyncio.sleep(0.5)
 
     await page.click("#btn-signin")
     await page.wait_for_load_state("load", timeout=30000)
@@ -105,9 +107,16 @@ async def login_tf():
         print(f"[TF] Login may have failed, URL: {url}")
 
 
-async def fetch_channellist(limit=36, offset=0):
+async def ensure_session():
+    global is_logged_in, page
+    if not page or page.is_closed():
+        is_logged_in = False
     if not is_logged_in:
         await login_tf()
+
+
+async def fetch_channellist(limit=36, offset=0):
+    await ensure_session()
 
     form_data = {
         "limit": str(limit),
@@ -219,8 +228,7 @@ async def fetch_channellist(limit=36, offset=0):
 
 
 async def fetch_channel_summary(channel_id, period="1Y"):
-    if not is_logged_in:
-        await login_tf()
+    await ensure_session()
     return await page.evaluate(
         """async (baseUrl, id, p) => {
             const res = await fetch(baseUrl + '/channels/ajax/getChannelSummaryx/' + id + '/', {
@@ -240,8 +248,7 @@ async def fetch_channel_summary(channel_id, period="1Y"):
 
 
 async def fetch_history(channel_id, start, end, limit=100):
-    if not is_logged_in:
-        await login_tf()
+    await ensure_session()
     all_signals = []
     offset = 0
     batch_limit = 100
@@ -295,6 +302,8 @@ async def lifespan(app: FastAPI):
     yield
     if browser:
         await browser.close()
+    if pw_instance:
+        await pw_instance.stop()
 
 
 app = FastAPI(title="MHC Studio API", version="2.0.0", lifespan=lifespan)
@@ -306,7 +315,7 @@ async def health():
         "status": "ok",
         "service": "MHC Studio API",
         "version": "2.0.0",
-        "engine": "python-playwright",
+        "engine": "python-playwright-stealth",
         "timestamp": datetime.now().isoformat(),
     }
 
@@ -314,9 +323,7 @@ async def health():
 @app.get("/api/channellist")
 async def channellist(offset: str = "0", limit: str = "36"):
     try:
-        if not is_logged_in:
-            await login_tf()
-
+        await ensure_session()
         channels = await fetch_channellist(int(limit), int(offset))
 
         if not channels:
@@ -342,8 +349,7 @@ async def channellist(offset: str = "0", limit: str = "36"):
 @app.get("/api/channel")
 async def channel(id: str = Query(...), period: str = "1Y"):
     try:
-        if not is_logged_in:
-            await login_tf()
+        await ensure_session()
         result = await fetch_channel_summary(id, period)
         return {
             "status": "success",
@@ -363,8 +369,7 @@ async def history(
     limit: int = 100,
 ):
     try:
-        if not is_logged_in:
-            await login_tf()
+        await ensure_session()
         if not end:
             end = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         data = await fetch_history(id, start, end, limit)
