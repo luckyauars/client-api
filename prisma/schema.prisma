@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model traders_data {
+  id              Int      @id @default(autoincrement())
+  cid             String   @unique
+  channel_name    String
+  channel_type    String?
+  provider        String?
+  is_verified     Boolean? @default(false)
+  score           Float?
+  total_signals   Int      @default(0)
+  win             Int      @default(0)
+  loose           Int      @default(0)
+  win_rate        Float?
+  active_signals  Int      @default(0)
+  pips_result     Float?
+  last_scraped_at DateTime?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+}
+
+model tbl_antrian {
+  id         Int      @id @default(autoincrement())
+  cid        String   @unique
+  channel    String
+  status     String   @default("pending")
+  error_msg  String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model traders_data_archive {
+  id              Int      @id @default(autoincrement())
+  cid             String
+  channel_name    String?
+  total_signals   Int?
+  win             Int?
+  loose           Int?
+  win_rate        Float?
+  active_signals  Int?
+  pips_result     Float?
+  archived_at     DateTime @default(now())
+}

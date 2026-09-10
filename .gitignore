@@ -1,6 +1,6 @@
-__pycache__/
-*.pyc
+node_modules/
 .env
-*.db
+dev.db
+dev.db-journal
 *.log
 .DS_Store
