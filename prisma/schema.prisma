@@ -7,44 +7,62 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model traders_data {
+model tradersData {
   id              Int      @id @default(autoincrement())
-  cid             String   @unique
-  channel_name    String
-  channel_type    String?
-  provider        String?
-  is_verified     Boolean? @default(false)
-  score           Float?
-  total_signals   Int      @default(0)
-  win             Int      @default(0)
-  loose           Int      @default(0)
-  win_rate        Float?
-  active_signals  Int      @default(0)
-  pips_result     Float?
-  last_scraped_at DateTime?
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  channelId       String   @unique
+  period          String?
+  username        String
+  rank            String?
+  medal           Int?
+  subscribers     Int?
+  price           Float?
+  ageMonths       Int?
+  winCount        Int?
+  lossCount       Int?
+  drawCount       Int?
+  postedSignal    Int?
+  settledSignal   Int?
+  avgTpPips       Float?
+  avgSlPips       Float?
+  consWin         Int?
+  consLoss        Int?
+  avgHoldSec      Int?
+  extraData       Json?
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
 }
 
-model tbl_antrian {
-  id         Int      @id @default(autoincrement())
-  cid        String   @unique
-  channel    String
-  status     String   @default("pending")
-  error_msg  String?
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+model tblAntrian {
+  id              Int      @id @default(autoincrement())
+  idChannel       String   @unique
+  process         String?
+  active          Boolean? @default(false)
+  errorCount      Int?
+  lastError       String?
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
 }
 
-model traders_data_archive {
+model tradersDataArchive {
   id              Int      @id @default(autoincrement())
-  cid             String
-  channel_name    String?
-  total_signals   Int?
-  win             Int?
-  loose           Int?
-  win_rate        Float?
-  active_signals  Int?
-  pips_result     Float?
-  archived_at     DateTime @default(now())
+  channelId       String
+  period          String?
+  username        String?
+  rank            String?
+  medal           Int?
+  subscribers     Int?
+  price           Float?
+  ageMonths       Int?
+  winCount        Int?
+  lossCount       Int?
+  drawCount       Int?
+  postedSignal    Int?
+  settledSignal   Int?
+  avgTpPips       Float?
+  avgSlPips       Float?
+  consWin         Int?
+  consLoss        Int?
+  extraData       Json?
+  periodLabel     String?
+  archivedAt      DateTime @default(now())
 }
