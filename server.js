@@ -271,7 +271,7 @@ async function processQueue(batchSize = 5) {
     where: {
       OR: [
         { active: true },
-        { process: 'error', errorCount: { lt: 3 } },
+        { process: 'error', OR: [{ errorCount: { lt: 3 } }, { errorCount: null }] },
       ],
     },
     orderBy: [{ process: 'desc' }, { createdAt: 'asc' }],
@@ -606,7 +606,7 @@ app.get('/api/scrape/status', async (req, res) => {
   try {
     const total = await prisma.tradersData.count();
     const active = await prisma.tblAntrian.count({ where: { active: true } });
-    const errors = await prisma.tblAntrian.count({ where: { process: 'error', errorCount: { lt: 3 } } });
+    const errors = await prisma.tblAntrian.count({ where: { process: 'error', OR: [{ errorCount: { lt: 3 } }, { errorCount: null }] } });
     res.json({ status: 'success', total_channels: total, pending_jobs: active, retryable_errors: errors });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
@@ -616,7 +616,7 @@ app.get('/api/scrape/status', async (req, res) => {
 app.get('/api/scrape/retry', async (req, res) => {
   try {
     const result = await prisma.tblAntrian.updateMany({
-      where: { process: 'error', errorCount: { lt: 3 } },
+      where: { process: 'error', OR: [{ errorCount: { lt: 3 } }, { errorCount: null }] },
       data: { active: true, process: 'summary' },
     });
     res.json({ status: 'success', retried: result.count });
