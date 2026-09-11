@@ -268,7 +268,12 @@ async function scrapeAndSaveChannels(limit = 1000) {
 
 async function processQueue(batchSize = 5) {
   const jobs = await prisma.tblAntrian.findMany({
-    where: { active: true },
+    where: {
+      OR: [
+        { active: true },
+        { process: 'error', errorCount: { lt: 3 } },
+      ],
+    },
     orderBy: [{ process: 'desc' }, { createdAt: 'asc' }],
     take: batchSize,
   });
@@ -279,7 +284,7 @@ async function processQueue(batchSize = 5) {
     try {
       const summary = await fetchChannelSummaryFromTF(job.idChannel);
       if (!summary?.summary) {
-        await prisma.tblAntrian.update({ where: { id: job.id }, data: { active: false, process: 'error' } });
+        await prisma.tblAntrian.update({ where: { id: job.id }, data: { active: false, process: 'error', errorCount: (job.errorCount || 0) + 1, lastError: 'No summary data' } });
         continue;
       }
 
@@ -314,7 +319,7 @@ async function processQueue(batchSize = 5) {
       console.log(`[Queue] Processed: ${title}`);
     } catch (error) {
       console.error(`[Queue] Error ${job.idChannel}:`, error.message);
-      await prisma.tblAntrian.update({ where: { id: job.id }, data: { active: false, process: 'error' } }).catch(() => {});
+      await prisma.tblAntrian.update({ where: { id: job.id }, data: { active: false, process: 'error', errorCount: (job.errorCount || 0) + 1, lastError: error.message } }).catch(() => {});
     }
   }
 
@@ -601,7 +606,33 @@ app.get('/api/scrape/status', async (req, res) => {
   try {
     const total = await prisma.tradersData.count();
     const active = await prisma.tblAntrian.count({ where: { active: true } });
-    res.json({ status: 'success', total_channels: total, pending_jobs: active });
+    const errors = await prisma.tblAntrian.count({ where: { process: 'error', errorCount: { lt: 3 } } });
+    res.json({ status: 'success', total_channels: total, pending_jobs: active, retryable_errors: errors });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
+app.get('/api/scrape/retry', async (req, res) => {
+  try {
+    const result = await prisma.tblAntrian.updateMany({
+      where: { process: 'error', errorCount: { lt: 3 } },
+      data: { active: true, process: 'summary' },
+    });
+    res.json({ status: 'success', retried: result.count });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
+app.get('/api/scrape/errors', async (req, res) => {
+  try {
+    const errors = await prisma.tblAntrian.findMany({
+      where: { process: 'error' },
+      orderBy: { errorCount: 'desc' },
+      select: { idChannel: true, errorCount: true, lastError: true, updatedAt: true },
+    });
+    res.json({ status: 'success', total: errors.length, errors });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
